@@ -1,0 +1,21 @@
+meta {
+  name: createLink without short code
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/shorten
+  body: json
+  auth: none
+}
+
+headers {
+  X-API-KEY: {{apiKey}}
+}
+
+body:json {
+  {
+    "url": "https://usebruno.com"
+  }
+}

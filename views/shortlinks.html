@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shortlinks</title>
+    <link rel="stylesheet" type="text/css" href="/static/styles.css">
+</head>
+<body>
+<h1>{{.SiteUrl}} shtnr</h1>
+<div class="form-container">
+    <h2>Add New Shortlink</h2>
+    <form action="/shorten" method="post">
+        <input type="text" name="shortURL" placeholder="Shortlink">
+        <input type="url" name="url" placeholder="Expanded URL" required>
+        <button type="submit">Add Shortlink</button>
+    </form>
+</div>
+<table>
+    <thead>
+    <tr>
+        <th>ShortCode</th>
+        <th>Shortlink</th>
+        <th>Expanded URL</th>
+        <th>Times Accessed</th>
+        <th>Actions</th>
+    </tr>
+    </thead>
+    <tbody>
+    {{range .Links}}
+    <tr>
+        <td>{{.ShortCode}}</td>
+        <td><a href="/{{.ShortCode}}" target="_blank">/{{.ShortCode}}</a></td>
+        <td><a href="{{.LongLink}}" target="_blank">{{.LongLink}}</a></td>
+        <td>{{.TimesAccessed}}</td>
+        <td>
+            <form action="/{{.ShortCode}}/delete" method="post">
+                <button type="submit">Delete</button>
+            </form>
+        </td>
+    </tr>
+    {{else}}
+    <tr>
+        <td colspan="4">No shortlinks found.</td>
+    </tr>
+    {{end}}
+    </tbody>
+</table>
+<a href="/logout">Logout</a>
+</body>
+</html>

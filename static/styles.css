@@ -1,0 +1,110 @@
+/* static/styles.css */
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #121212;
+    color: #e0e0e0;
+    padding: 20px;
+
+    a {
+        color: #1f8e44;
+        text-decoration: none;
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+
+    th, td {
+        border: 1px solid #333;
+        padding: 10px;
+        text-align: left;
+    }
+
+    th {
+        background-color: #1f8e44;
+        color: white;
+    }
+
+    tr:nth-child(even) {
+        background-color: #1e1e1e;
+    }
+
+    tr:hover {
+        background-color: #333;
+    }
+}
+
+.form-container {
+    margin-bottom: 20px;
+
+    form {
+        display: flex;
+        flex-direction: column;
+
+        input {
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #555;
+            border-radius: 5px;
+            background-color: #333;
+            color: #e0e0e0;
+        }
+
+        button {
+            padding: 10px;
+            background-color: #1f8e44;
+            border: none;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+
+            &:hover {
+                background-color: #179339;
+            }
+        }
+    }
+}
+
+.login-container {
+    background-color: #1e1e1e;
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    max-width: 300px;
+    margin: 0 auto;
+
+    h2 {
+        margin-bottom: 20px;
+    }
+
+    input {
+        width: 100%;
+        padding: 10px;
+        margin: 10px 0;
+        border: 1px solid #555;
+        border-radius: 5px;
+        background-color: #333;
+        color: #e0e0e0;
+    }
+
+    button {
+        width: 100%;
+        padding: 10px;
+        background-color: #1f8e44;
+        border: none;
+        color: white;
+        border-radius: 5px;
+        cursor: pointer;
+
+        &:hover {
+            background-color: #179339;
+        }
+    }
+}
