@@ -27,7 +27,7 @@ jobs:
 
     - name: Build Docker image
       run: |
-        docker build . -t dmt195/go-shtnr:${{ env.RELEASE_TAG }} -f Dockerfile
+        docker build . -t dmt195/go-shtnr:latest -t dmt195/go-shtnr:${{ env.RELEASE_TAG }} -f Dockerfile
 
     - name: Push Docker image
       run: |
