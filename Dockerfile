@@ -38,7 +38,7 @@ COPY --from=builder /app/views ./views
 COPY --from=builder /app/static ./static
 
 # Copy the database file
-COPY --from=builder /app/data/local.sqlite ./data/local.sqlite
+COPY --from=builder /app/data ./data/
 
 # Expose port 3003 to the outside world
 EXPOSE 3003
