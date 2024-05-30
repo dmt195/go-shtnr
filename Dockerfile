@@ -37,8 +37,8 @@ COPY --from=builder /app/views ./views
 # Copy the static directory
 COPY --from=builder /app/static ./static
 
-# Copy the database file
-COPY --from=builder /app/data ./data/
+# Prepare dir for the database file
+RUN mkdir ./data/
 
 # Expose port 3003 to the outside world
 EXPOSE 3003
