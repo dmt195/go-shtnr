@@ -1,0 +1,12 @@
+version: '3.8'
+services:
+  shtnr:
+    build: .
+    ports:
+      - "3001:3001"
+    environment:
+      - BASE_URL=http://localhost
+      - PORT=3001
+      - ADMIN_USERNAME=admin
+      - ADMIN_PASSWORD=changeme
+      - API_KEY=D3oiiLDNjDP9Q6Q9Y2Q9
