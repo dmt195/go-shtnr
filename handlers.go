@@ -1,12 +1,15 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"html/template"
 	"log"
 	"net/http"
+	"time"
 )
 
 // LoginHandler handles the login logic
@@ -16,9 +19,12 @@ func (*App) LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	if username == app.config.defaultAdminUser && pass == app.config.defaultAdminPassword {
 		http.SetCookie(w, &http.Cookie{
-			Name:  "session_token",
-			Value: "authenticated",
-			Path:  "/",
+			Name:     "session_token",
+			Value:    pass,
+			Path:     "/",
+			HttpOnly: true,
+			Secure:   !app.config.isDevelopment,
+			Expires:  time.Now().Add(1 * time.Hour),
 		})
 		http.Redirect(w, r, "/shortlinks", http.StatusSeeOther)
 	} else {
@@ -31,10 +37,12 @@ func (*App) LoginHandler(w http.ResponseWriter, r *http.Request) {
 func (*App) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	// Clear the session cookie
 	http.SetCookie(w, &http.Cookie{
-		Name:   "session_token",
-		Value:  "",
-		Path:   "/",
-		MaxAge: -1,
+		Name:     "session_token",
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   !app.config.isDevelopment,
 	})
 	// Redirect to login page
 	http.Redirect(w, r, "/login", http.StatusSeeOther)
@@ -46,7 +54,11 @@ func (*App) FollowShortURL(w http.ResponseWriter, r *http.Request) {
 	longURL, err := getLinkByShortLink(shortURL)
 	if err != nil {
 		log.Printf("Failed to get Link by short link \"%s\". Error: %s", shortURL, err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		if errors.As(err, &sql.ErrNoRows) {
+			http.Error(w, "Not found", http.StatusNotFound)
+		} else {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	log.Println("Redirecting user to:", longURL)
