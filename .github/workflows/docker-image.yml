@@ -31,4 +31,4 @@ jobs:
 
     - name: Push Docker image
       run: |
-        docker push dmt195/go-shtnr:${{ env.RELEASE_TAG }}
+        docker push --all-tags dmt195/go-shtnr
