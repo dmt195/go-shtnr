@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"github.com/gorilla/securecookie"
+	"golang.org/x/crypto/bcrypt"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -11,19 +13,33 @@ import (
 
 var app App
 
+func NewApp(config *Config) *App {
+	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(config.defaultAdminPassword), bcrypt.DefaultCost)
+	hashKey := securecookie.GenerateRandomKey(32)  // 32 bytes = 256 bits
+	blockKey := securecookie.GenerateRandomKey(32) // 32 bytes = 256 bits
+	sc := securecookie.New(hashKey, blockKey)
+
+	return &App{
+		config:       config,
+		hashPassword: string(hashedPassword),
+		sc:           sc,
+		db:           nil,
+	}
+}
+
 func main() {
 
-	app = App{
-		config{
+	config :=
+		Config{
 			envy.Get("BASE_URL", "http://localhost"),
 			envy.Get("PORT", "3001"),
 			envy.Get("IS_DEV", "false") == "true",
 			envy.Get("ADMIN_USERNAME", "admin"),
 			envy.Get("ADMIN_PASSWORD", "password"),
 			envy.Get("API_KEY", "123456"),
-		},
-		nil,
-	}
+		}
+
+	app = *NewApp(&config)
 
 	setupDatabase()
 
@@ -72,10 +88,24 @@ func main() {
 func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie("session_token")
-		if err != nil || cookie.Value != "authenticated" {
+		if err != nil {
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
+
+		// Decode the session cookie
+		value := make(map[string]string)
+		if err = app.sc.Decode("session", cookie.Value, &value); err != nil {
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			return
+		}
+
+		// Check if the session token is authenticated
+		if token, ok := value["token"]; !ok || token != "authenticated" {
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			return
+		}
+
 		next.ServeHTTP(w, r)
 	})
 }
