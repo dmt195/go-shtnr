@@ -1,12 +1,16 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/go-chi/chi/v5"
+	"golang.org/x/crypto/bcrypt"
 	"html/template"
 	"log"
 	"net/http"
+	"time"
 )
 
 // LoginHandler handles the login logic
@@ -14,13 +18,29 @@ func (*App) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	username := r.FormValue("username")
 	pass := r.FormValue("password")
 
-	if username == app.config.defaultAdminUser && pass == app.config.defaultAdminPassword {
-		http.SetCookie(w, &http.Cookie{
-			Name:  "session_token",
-			Value: "authenticated",
-			Path:  "/",
-		})
-		http.Redirect(w, r, "/shortlinks", http.StatusSeeOther)
+	if username == app.config.defaultAdminUser &&
+		bcrypt.CompareHashAndPassword([]byte(app.hashPassword), []byte(pass)) == nil {
+		// Generate a secure session token
+		value := map[string]string{
+			"username": username,
+			"token":    "authenticated",
+		}
+		if encoded, err := app.sc.Encode("session", value); err == nil {
+			cookie := &http.Cookie{
+				Name:     "session_token",
+				Value:    encoded,
+				Path:     "/",
+				HttpOnly: true,
+				Secure:   !app.config.isDevelopment, // Set to true in production
+				Expires:  time.Now().Add(1 * time.Hour),
+			}
+			http.SetCookie(w, cookie)
+			http.Redirect(w, r, "/shortlinks", http.StatusSeeOther)
+		} else {
+			log.Println("Failed to encode session token:", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 	} else {
 		w.WriteHeader(http.StatusUnauthorized)
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
@@ -31,10 +51,12 @@ func (*App) LoginHandler(w http.ResponseWriter, r *http.Request) {
 func (*App) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	// Clear the session cookie
 	http.SetCookie(w, &http.Cookie{
-		Name:   "session_token",
-		Value:  "",
-		Path:   "/",
-		MaxAge: -1,
+		Name:     "session_token",
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   !app.config.isDevelopment,
 	})
 	// Redirect to login page
 	http.Redirect(w, r, "/login", http.StatusSeeOther)
@@ -46,7 +68,11 @@ func (*App) FollowShortURL(w http.ResponseWriter, r *http.Request) {
 	longURL, err := getLinkByShortLink(shortURL)
 	if err != nil {
 		log.Printf("Failed to get Link by short link \"%s\". Error: %s", shortURL, err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		if errors.As(err, &sql.ErrNoRows) {
+			http.Error(w, "Not found", http.StatusNotFound)
+		} else {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	log.Println("Redirecting user to:", longURL)

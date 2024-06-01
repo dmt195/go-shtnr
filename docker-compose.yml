@@ -1,7 +1,9 @@
+# example docker-compose.yml
+
 version: '3.8'
 services:
   shtnr:
-    build: .
+    image: dmt195/go-shtnr
     ports:
       - "3001:3001"
     environment:

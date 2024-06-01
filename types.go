@@ -1,13 +1,18 @@
 package main
 
-import "database/sql"
+import (
+	"database/sql"
+	"github.com/gorilla/securecookie"
+)
 
 type App struct {
-	config config
-	db     *sql.DB
+	config       *Config
+	db           *sql.DB
+	hashPassword string
+	sc           *securecookie.SecureCookie
 }
 
-type config struct {
+type Config struct {
 	baseUrl              string
 	port                 string
 	isDevelopment        bool
