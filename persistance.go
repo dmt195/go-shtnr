@@ -1,11 +1,12 @@
 package main
 
 import (
+	"crypto/rand"
 	"database/sql"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
 	"log"
-	"math/rand/v2"
+	"math/big"
 )
 
 func setupDatabase() {
@@ -30,7 +31,7 @@ func setupDatabase() {
 	}
 }
 
-func insertLink(l Link) (int64, error) {
+func insertLink(l *Link) (int64, error) {
 	// if the short code is not provided, generate one
 	if l.ShortCode == "" {
 		l.ShortCode = generateShortCode()
@@ -61,7 +62,13 @@ func generateShortCode() string {
 
 	shortKey := make([]byte, keyLength)
 	for i := range shortKey {
-		shortKey[i] = charset[rand.N(len(charset))]
+		n, err := rand.Int(rand.Reader, big.NewInt(int64(len(charset))))
+		if err != nil {
+			log.Println("failed to generate random number for short code")
+			// fallback to math/rand
+			return "fallback"
+		}
+		shortKey[i] = charset[n.Int64()]
 	}
 	return string(shortKey)
 }

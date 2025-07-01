@@ -11,10 +11,13 @@ import (
 	"github.com/gobuffalo/envy"
 )
 
-var app App
+var app *App
 
-func NewApp(config *Config) *App {
-	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(config.defaultAdminPassword), bcrypt.DefaultCost)
+func NewApp(config *Config) (*App, error) {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(config.defaultAdminPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, fmt.Errorf("failed to hash password: %w", err)
+	}
 	hashKey := securecookie.GenerateRandomKey(32)  // 32 bytes = 256 bits
 	blockKey := securecookie.GenerateRandomKey(32) // 32 bytes = 256 bits
 	sc := securecookie.New(hashKey, blockKey)
@@ -24,7 +27,7 @@ func NewApp(config *Config) *App {
 		hashPassword: string(hashedPassword),
 		sc:           sc,
 		db:           nil,
-	}
+	}, nil
 }
 
 func main() {
@@ -39,7 +42,11 @@ func main() {
 			envy.Get("API_KEY", "123456"),
 		}
 
-	app = *NewApp(&config)
+	var err error
+	app, err = NewApp(&config)
+	if err != nil {
+		panic(err)
+	}
 
 	setupDatabase()
 
@@ -78,7 +85,7 @@ func main() {
 
 	http.Handle("/", r)
 	fmt.Println("Server started at :", app.config.port)
-	err := http.ListenAndServe(fmt.Sprintf(":%s", app.config.port), nil)
+	err = http.ListenAndServe(fmt.Sprintf(":%s", app.config.port), nil)
 	if err != nil {
 		panic(err)
 	}

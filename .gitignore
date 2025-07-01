@@ -2,3 +2,5 @@
 .env
 data/local.sqlite
 
+.DS_Store
+main

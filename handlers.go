@@ -6,20 +6,31 @@ import (
 	"errors"
 	"fmt"
 	"github.com/go-chi/chi/v5"
-	"golang.org/x/crypto/bcrypt"
 	"html/template"
 	"log"
 	"net/http"
+	"net/url"
+	"regexp"
 	"time"
 )
+
+func isValidURL(toTest string) bool {
+	_, err := url.ParseRequestURI(toTest)
+	if err != nil {
+		return false
+	}
+
+	re := regexp.MustCompile(`^(http|https)://`)
+	return re.MatchString(toTest)
+}
 
 // LoginHandler handles the login logic
 func (*App) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	username := r.FormValue("username")
 	pass := r.FormValue("password")
 
-	if username == app.config.defaultAdminUser &&
-		bcrypt.CompareHashAndPassword([]byte(app.hashPassword), []byte(pass)) == nil {
+	if username == app.config.defaultAdminUser && pass == app.config.defaultAdminPassword {
+
 		// Generate a secure session token
 		value := map[string]string{
 			"username": username,
@@ -42,7 +53,7 @@ func (*App) LoginHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		}
 	} else {
-		w.WriteHeader(http.StatusUnauthorized)
+		log.Println("Login failed: username or password mismatch")
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 	}
 }
@@ -68,7 +79,7 @@ func (*App) FollowShortURL(w http.ResponseWriter, r *http.Request) {
 	longURL, err := getLinkByShortLink(shortURL)
 	if err != nil {
 		log.Printf("Failed to get Link by short link \"%s\". Error: %s", shortURL, err)
-		if errors.As(err, &sql.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			http.Error(w, "Not found", http.StatusNotFound)
 		} else {
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -83,8 +94,12 @@ func (*App) FollowShortURL(w http.ResponseWriter, r *http.Request) {
 // ShortenURL handles the URL shortening logic
 func (*App) ShortenURL(w http.ResponseWriter, r *http.Request) {
 	longURL := r.FormValue("url")
+	if !isValidURL(longURL) {
+		http.Error(w, "Invalid URL", http.StatusBadRequest)
+		return
+	}
 	shortURL := r.FormValue("shortURL")
-	_, err := insertLink(Link{ShortCode: shortURL, LongLink: longURL})
+	_, err := insertLink(&Link{ShortCode: shortURL, LongLink: longURL})
 	if err != nil {
 		log.Println("Failed to insert Link:", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -105,7 +120,11 @@ func (*App) ShortenURLApi(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Cannot parse body", http.StatusBadRequest)
 		return
 	}
-	i, err := insertLink(Link{ShortCode: req.ShortUrl, LongLink: req.URL})
+	if !isValidURL(req.URL) {
+		http.Error(w, "Invalid URL", http.StatusBadRequest)
+		return
+	}
+	i, err := insertLink(&Link{ShortCode: req.ShortUrl, LongLink: req.URL})
 	if err != nil {
 		log.Println("Failed to insert Link: ", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -161,9 +180,13 @@ func (*App) ShortLinksHandler(w http.ResponseWriter, _ *http.Request) {
 		siteUlr = app.config.baseUrl
 	}
 
-	tmpl.Execute(w, ViewModel{
+	err = tmpl.Execute(w, ViewModel{
 		Links:   links,
 		SiteUrl: siteUlr,
-	},
-	)
+	})
+	if err != nil {
+		log.Println("Failed to execute template:", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
 }
