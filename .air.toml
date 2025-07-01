@@ -1,0 +1,17 @@
+# .air.toml
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  cmd = "go build -o ./tmp/main ."
+  bin = "./tmp/main"
+  
+  include_ext = ["go", "html", "css"]
+  exclude_dir = ["tmp", "data", ".git", ".idea"]
+  log = "air.log"
+
+[log]
+  time = true
+
+[misc]
+  clean_on_exit = true

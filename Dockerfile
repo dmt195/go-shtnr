@@ -22,6 +22,9 @@ RUN go build -o main .
 # Start a new stage from scratch
 FROM alpine:latest
 
+# Create a non-root user
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
 # Install necessary libraries for go-sqlite3
 RUN apk add --no-cache ca-certificates libc6-compat
 
@@ -38,7 +41,10 @@ COPY --from=builder /app/views ./views
 COPY --from=builder /app/static ./static
 
 # Prepare dir for the database file
-RUN mkdir ./data/
+RUN mkdir ./data/ && chown -R appuser:appgroup ./data/
+
+# Switch to the non-root user
+USER appuser
 
 # Expose port 3003 to the outside world
 EXPOSE 3003

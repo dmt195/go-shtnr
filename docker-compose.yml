@@ -1,14 +1,44 @@
-# example docker-compose.yml
+# docker-compose.yml
+#
+# To run the production-like container:
+# docker-compose up prod
+#
+# To run the development container with hot-reloading:
+# docker-compose up dev
 
 version: '3.8'
 services:
-  shtnr:
-    image: dmt195/go-shtnr
+  # Production service - builds the image using the Dockerfile
+  prod:
+    build: .
     ports:
-      - "3001:3001"
+      - "3003:3003"
     environment:
       - BASE_URL=http://localhost
-      - PORT=3001
+      - PORT=3003
       - ADMIN_USERNAME=admin
-      - ADMIN_PASSWORD=changeme
+      - ADMIN_PASSWORD=password
       - API_KEY=D3oiiLDNjDP9Q6Q9Y2Q9
+    volumes:
+      - ./data:/app/data
+
+  # Development service - uses a Go image and air for hot-reloading
+  dev:
+    image: golang:1.24-alpine
+    ports:
+      - "3003:3003"
+    environment:
+      - BASE_URL=http://localhost
+      - PORT=3003
+      - ADMIN_USERNAME=admin
+      - ADMIN_PASSWORD=password
+      - API_KEY=D3oiiLDNjDP9Q6Q9Y2Q9
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: >
+      sh -c "
+        apk add --no-cache build-base &&
+        go install github.com/air-verse/air@latest &&
+        air
+      "
